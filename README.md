@@ -1,7 +1,7 @@
 Poorloan
 ========
 
-Poorloan is something to play with friends. We love borrowing money from friends, and forgetting them after expending. But our friends are nice, we should not betray them, and should mark all of your credit on the wall.
+Poorloan is something to play with friends. We love borrowing money from friends, and forgetting them after spending. But our friends are nice, we should not betray them, and should mark all of your credit on the wall.
 
 All of us are poor, and we love this poor program. The main goal is to have every transaction recorded, with simple currency conversion. 
 
@@ -31,7 +31,7 @@ Each `account` command opens a new account. The first `string` refers to the uni
 
 Entries are simple and we do double-entry accounting between accounts.
 
-    {uuid} credit/debit {float64} {string} [ @/= {float64} {string} ]
+    {uuid} credit/debit {Decimal} {string} [ @/= {Decimal} {string} ]
       ID                  Amount  Currency         Amount  Currency
 
 Any Currency `string` blocks must be a string registered with `currencies` command in `.bk` file. ID in uuid form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx is unique for every transaction. In double-entry accounting, all entries of a single ID must be a **zero** sum when calculating the amount (with sign, debit is positive and credit negative). The first `Amount` is the actual transaction amount, of the first `Currency`. `[]` blocks are optional. Here the optional block is used to do currency conversion while calculating account liabilities.

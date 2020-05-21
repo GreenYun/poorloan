@@ -29,42 +29,41 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"golang.org/x/sync/errgroup"
 )
 
 // Entry stores the information of a single entry.
 type Entry struct {
-	Credit map[string]float64
-	Debit  map[string]float64
+	Credit map[string]decimal.Decimal
+	Debit  map[string]decimal.Decimal
 }
 
 type bookLine struct {
 	index        uuid.UUID
-	transferType int
+	transferType int64
 	currency     string
-	amount       float64
+	amount       decimal.Decimal
 	asCurrency   string
-	asAmount     float64
+	asAmount     decimal.Decimal
 }
 
 type mutexMap struct {
-	m  map[uuid.UUID]float64
+	m  map[uuid.UUID]decimal.Decimal
 	mu sync.Mutex
 }
 
-func (mm *mutexMap) plusAssign(key uuid.UUID, val float64) {
+func (mm *mutexMap) plusAssign(key uuid.UUID, val decimal.Decimal) {
 	mm.mu.Lock()
 	defer mm.mu.Unlock()
 
 	if v, ok := mm.m[key]; ok {
-		if sum := v + val; math.Round(sum*100) == 0 {
+		if sum := v.Add(val); sum.Equal(decimal.Zero) {
 			delete(mm.m, key)
 		} else {
 			mm.m[key] = sum
@@ -86,7 +85,7 @@ func (b *Book) ValidateEntry() error {
 // If index = uuid.Nil, returns nil.
 func (b *Book) ValidateEntryAndGet(index uuid.UUID) (*Entry, error) {
 	var entryStack mutexMap
-	entryStack.m = make(map[uuid.UUID]float64)
+	entryStack.m = make(map[uuid.UUID]decimal.Decimal)
 
 	var ret *Entry = nil
 	var retMutex sync.Mutex
@@ -120,12 +119,12 @@ func (b *Book) ValidateEntryAndGet(index uuid.UUID) (*Entry, error) {
 					return fmt.Errorf("line %d in %s: currency %s not valid in this book", i, ac.EntryFile, bl.currency)
 				}
 
-				entryStack.plusAssign(bl.index, float64(bl.transferType)*bl.amount)
+				entryStack.plusAssign(bl.index, bl.amount.Mul(decimal.NewFromInt(bl.transferType)))
 
 				if bl.asCurrency != "" {
-					ac.liabilities[bl.asCurrency] -= float64(bl.transferType) * bl.asAmount
+					ac.liabilities[bl.asCurrency] = ac.liabilities[bl.asCurrency].Sub(bl.asAmount.Mul(decimal.NewFromInt(bl.transferType)))
 				} else {
-					ac.liabilities[bl.currency] -= float64(bl.transferType) * bl.amount
+					ac.liabilities[bl.currency] = ac.liabilities[bl.currency].Sub(bl.amount.Mul(decimal.NewFromInt(bl.transferType)))
 				}
 
 				if bl.index == index {
@@ -133,8 +132,8 @@ func (b *Book) ValidateEntryAndGet(index uuid.UUID) (*Entry, error) {
 
 					if ret == nil {
 						ret = new(Entry)
-						ret.Credit = make(map[string]float64)
-						ret.Debit = make(map[string]float64)
+						ret.Credit = make(map[string]decimal.Decimal)
+						ret.Debit = make(map[string]decimal.Decimal)
 					}
 
 					if bl.transferType == 1 {
@@ -194,26 +193,26 @@ func parseBookLine(l string) (*bookLine, error) {
 		return nil, errors.New("transfer type invalid")
 	}
 
-	f64, err := strconv.ParseFloat(s[2], 64)
+	dec, err := decimal.NewFromString(s[2])
 	if err != nil {
 		return nil, err
 	}
-	bl.amount = f64
+	bl.amount = dec
 
 	bl.currency = s[3]
 
 	bl.asCurrency = ""
 	if translate {
-		f64, err = strconv.ParseFloat(s[5], 64)
+		dec, err = decimal.NewFromString(s[5])
 		if err != nil {
 			return nil, err
 		}
 
 		switch s[4] {
 		case "@":
-			bl.asAmount = bl.amount * f64
+			bl.asAmount = bl.amount.Mul(dec)
 		case "=":
-			bl.asAmount = f64
+			bl.asAmount = dec
 		default:
 			return nil, errors.New("syntax error")
 		}

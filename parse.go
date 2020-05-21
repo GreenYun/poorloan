@@ -30,6 +30,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/shopspring/decimal"
 )
 
 // Parse decodes the fp into a Book or returns an error.
@@ -103,7 +105,7 @@ func (b *Book) ParseLine(l string) error {
 		ac := new(Account)
 		ac.Name = s[1]
 		ac.EntryFile = splitByQuote[1]
-		ac.liabilities = make(map[string]float64)
+		ac.liabilities = make(map[string]decimal.Decimal)
 		b.Accounts = append(b.Accounts, *ac)
 	default:
 		return errors.New("syntax error")
