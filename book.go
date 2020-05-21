@@ -27,13 +27,15 @@ package poorloan
 import (
 	"errors"
 	"fmt"
+
+	"github.com/shopspring/decimal"
 )
 
 // Account stores the information of an account in bookkeeping.
 type Account struct {
 	Name        string
 	EntryFile   string
-	liabilities map[string]float64
+	liabilities map[string]decimal.Decimal
 }
 
 // Book stores the information of a book.
@@ -58,16 +60,16 @@ func (b *Book) GetAccountByName(name string) (*Account, error) {
 // GetLiabilities returns the liabilities in curs of an account.
 // Empty parameter list will return all liabilities.
 // Error occurs when any string in curs is not match any valid currencies.
-func (ac *Account) GetLiabilities(curs ...string) (map[string]float64, error) {
+func (ac *Account) GetLiabilities(curs ...string) (map[string]decimal.Decimal, error) {
 	if ac.liabilities == nil {
-		return nil, errors.New("validation must be excuted before getting liabilities")
+		return nil, errors.New("validation must be executed before getting liabilities")
 	}
 
 	if len(curs) == 0 {
 		return ac.liabilities, nil
 	}
 
-	l := make(map[string]float64)
+	l := make(map[string]decimal.Decimal)
 	for _, c := range curs {
 		if v, ok := ac.liabilities[c]; ok {
 			l[c] = v
