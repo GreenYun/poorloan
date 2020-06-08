@@ -70,15 +70,19 @@ func mktestdata() uuid.UUID {
 				ret = id
 			}
 
+			cur := currencies[rand.Intn(4)]
+
 			amount := make([]float64, i)
 			var sum float64 = 0
 			for k := 0; k < i-1; k++ {
-				amount[k] = (float64(rand.Intn(2)) - 0.5) * float64(rand.Int31()/1000) / float64(50)
+				if cur == "JPY" {
+					amount[k] = (float64(rand.Intn(2)) - 0.5) * float64(rand.Int31()/1000) * 2
+				} else {
+					amount[k] = (float64(rand.Intn(2)) - 0.5) * float64(rand.Int31()/1000) / float64(50)
+				}
 				sum += amount[k]
 			}
 			amount[i-1] = -sum
-
-			cur := currencies[rand.Intn(4)]
 
 			selected := make([]bool, nFile)
 			for k := 0; k < i; k++ {
@@ -109,9 +113,17 @@ func mktestdata() uuid.UUID {
 				case 0:
 					files[sf].WriteString(fmt.Sprintf("%s %s %.2f %s\n", id.String(), transfer, math.Abs(amount[k]), cur))
 				case 1:
-					files[sf].WriteString(fmt.Sprintf("%s %s %.2f %s @ %.2f %s\n", id.String(), transfer, math.Abs(amount[k]), cur, convertAmount, convertCur))
+					if convertCur == "JPY" {
+						files[sf].WriteString(fmt.Sprintf("%s %s %.2f %s @ %.2f %s 1\n", id.String(), transfer, math.Abs(amount[k]), cur, convertAmount, convertCur))
+					} else {
+						files[sf].WriteString(fmt.Sprintf("%s %s %.2f %s @ %.2f %s\n", id.String(), transfer, math.Abs(amount[k]), cur, convertAmount, convertCur))
+					}
 				case 2:
-					files[sf].WriteString(fmt.Sprintf("%s %s %.2f %s = %.2f %s\n", id.String(), transfer, math.Abs(amount[k]), cur, convertAmount*math.Abs(amount[k]), convertCur))
+					if convertCur == "JPY" {
+						files[sf].WriteString(fmt.Sprintf("%s %s %.2f %s = %.2f %s\n", id.String(), transfer, math.Abs(amount[k]), cur, math.Round(convertAmount*math.Abs(amount[k])), convertCur))
+					} else {
+						files[sf].WriteString(fmt.Sprintf("%s %s %.2f %s = %.2f %s\n", id.String(), transfer, math.Abs(amount[k]), cur, convertAmount*math.Abs(amount[k]), convertCur))
+					}
 				}
 			}
 		}

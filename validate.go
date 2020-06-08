@@ -155,7 +155,7 @@ func (b *Book) ValidateEntryAndGet(index uuid.UUID) (*Entry, error) {
 	}
 
 	for k, v := range entryStack.m {
-		return nil, fmt.Errorf("entry %s does not meet zero: %f", k.String(), v)
+		return nil, fmt.Errorf("entry %s does not meet zero: %s", k.String(), v.String())
 	}
 
 	if index != uuid.Nil && ret == nil {
@@ -169,11 +169,17 @@ func parseBookLine(l string) (*bookLine, error) {
 	s := strings.Split(l, " ")
 	s = removeEmpty(&s)
 	translate := false
-	if len(s) != 4 {
-		if len(s) != 7 {
-			return nil, errors.New("syntax error")
-		}
+	rounding := false
+
+	switch l := len(s); l {
+	case 8 :
+		rounding = true
+		fallthrough
+	case 7 :
 		translate = true
+		fallthrough
+	case 4 :
+	default: return nil, errors.New("syntax error")
 	}
 
 	bl := new(bookLine)
@@ -210,8 +216,20 @@ func parseBookLine(l string) (*bookLine, error) {
 
 		switch s[4] {
 		case "@":
-			bl.asAmount = bl.amount.Mul(dec)
+			if rounding {
+				base, err := decimal.NewFromString(s[7])
+				if err != nil {
+					return nil, err
+				}
+				bl.asAmount = bl.amount.Mul(dec).DivRound(base, 0).Mul(base)
+
+			} else {
+				bl.asAmount = bl.amount.Mul(dec)
+			}
 		case "=":
+			if rounding {
+				return nil, errors.New("syntax error")
+			}
 			bl.asAmount = dec
 		default:
 			return nil, errors.New("syntax error")
