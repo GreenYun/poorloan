@@ -1,4 +1,4 @@
-module poorloan
+module github.com/GreenYun/poorloan
 
 go 1.14
 
