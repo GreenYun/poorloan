@@ -157,6 +157,10 @@ func test(id uuid.UUID) {
 
 	fmt.Println("\nPrint all liabilities")
 	for _, v := range b.Accounts {
-		fmt.Println(v.GetLiabilities())
+		fmt.Println(firstVal(v.GetLiabilities()))
 	}
+}
+
+func firstVal(args... interface{}) interface{} {
+	return args[0];
 }
